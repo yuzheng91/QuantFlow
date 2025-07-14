@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "quantflow",
+			"path": "."
+		},
+		{
+			"name": "frontend",
+			"path": "../Backtrader/Backtrader/frontend"
+		}
+	],
+	"settings": {}
+}
