@@ -4,6 +4,7 @@ from django.views.decorators.http import require_http_methods
 import os, importlib, json
 from strategies.run_strategy_metrics import run_strategy_metrics
 from run_backtest import backtest
+from django.views.decorators.http import require_GET
 
 @require_http_methods(["GET"])
 def fixed_strategy(request):
@@ -47,9 +48,9 @@ def indicator_schema(request):
 def custom_strategy(request):
     data = json.loads(request.body)
     result = backtest(
-        data["entry_category"], data["entry_name"],
-        data["exit_category"],  data["exit_name"],
-        data.get("entry_params", {}),
-        data.get("exit_params", {})
+        entry_indicators=data.get("entry_indicators", []),
+        exit_indicators=data.get("exit_indicators", []),
+        entry_mode=data.get("entry_mode", "and"),
+        exit_mode=data.get("exit_mode", "or"),
     )
     return JsonResponse(result, safe=False)

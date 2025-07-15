@@ -15,7 +15,7 @@ class CustomStrategy(bt.Strategy):
     def next(self):
         if self.signal_index >= len(self.entry_signal):
             return
-        if not self.position and self.entry_signal[self.signal_index]:
+        if not self.position and self.entry_signal.iloc[self.signal_index]:
             self.buy()
         elif self.position and self.exit_signal[self.signal_index]:
             self.sell()
@@ -24,18 +24,52 @@ class CustomStrategy(bt.Strategy):
         self.daily_value.append(self.broker.getvalue())
         self.daily_dates.append(self.data.datetime.date(0))
 
-def backtest(entry_category: str, entry_indicator: str, exit_category: str, exit_indicator: str, entry_params: dict,
-             exit_params: dict):
+def combine_signals(signals, mode='and'):
+    if not signals:
+        return pd.Series([False] * (signals[0]));
+    
+    combined = signals[0].copy()
+    for sig in signals[1:]:
+        if mode == 'and':
+            combined &= sig
+        elif mode =='or':
+            combined |= sig
+    return combined
+        
+
+def backtest(entry_indicators,exit_indicators, entry_mode='and', exit_mode='or'):
     df = pd.read_csv("data/AAPL_daily_2012_2024.csv", index_col="Date", parse_dates=True)
     data = bt.feeds.PandasData(dataname=df)
-    entry_module = importlib.import_module(f"indicators.entry.{entry_category}.{entry_indicator}")
-    exit_module = importlib.import_module(f"indicators.exit.{exit_category}.{exit_indicator}")
+    
+    # --- Load entry signals ---
+    entry_signals = []
+    for ind in entry_indicators:
+        cat = ind["category"]
+        name = ind["name"]
+        params = ind.get("params", {})
+        mod = importlib.import_module(f"indicators.entry.{cat}.{name}")
+        func = getattr(mod, "generate_signal")
+        entry_signals.append(func(df.copy(), **params))
+
+    combined_entry = combine_signals(entry_signals, mode=entry_mode)
+
+    # --- Load exit signals ---
+    exit_signals = []
+    for ind in exit_indicators:
+        cat = ind["category"]
+        name = ind["name"]
+        params = ind.get("params", {})
+        mod = importlib.import_module(f"indicators.exit.{cat}.{name}")
+        func = getattr(mod, "generate_signal")
+        exit_signals.append(func(df.copy(), **params))
+
+    combined_exit = combine_signals(exit_signals, mode=exit_mode)
 
     cerebro = bt.Cerebro()
     cerebro.adddata(data)
     cerebro.addstrategy(CustomStrategy,
-                        entry_signal=entry_module.generate_signal(df, **entry_params),
-                        exit_signal=exit_module.generate_signal(df, **exit_params))
+                        entry_signal=combined_entry,
+                        exit_signal=combined_exit)
     start_value = 10000
     cerebro.broker.setcash(start_value)
     cerebro.broker.setcommission(commission=0.001)

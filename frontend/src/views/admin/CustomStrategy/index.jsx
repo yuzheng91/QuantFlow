@@ -1,376 +1,386 @@
-// CustomStrategy.jsx  (React + Chakra UI)
-import axios from "axios";
-
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import {
   Box,
   Button,
   Card,
-  CardBody,
-  VStack,
   HStack,
   Heading,
-  Select,
-  Text,
-  Spinner,
   Input,
-  SimpleGrid,
-  StatLabel,
+  Select,
+  Spinner,
   Stat,
+  StatLabel,
   StatNumber,
+  Text,
+  VStack,
+  SimpleGrid,
+  CardBody,
 } from '@chakra-ui/react';
 
-const api = 'http://127.0.0.1:8000/api';
+const api = 'http://localhost:8000/api';
 
 export default function CustomStrategy() {
-  // 指標清單 (分類後)
   const [entryDict, setEntryDict] = useState({});
   const [exitDict, setExitDict] = useState({});
-
-  // 目前選擇
-  const [entryCat, setEntryCat] = useState('');
-  const [entryName, setEntryName] = useState('');
-  const [exitCat, setExitCat] = useState('');
-  const [exitName, setExitName] = useState('');
-
-  // schema 與參數
-  const [entrySchema, setEntrySchema] = useState({});
-  const [exitSchema, setExitSchema] = useState({});
-  const [entryParams, setEntryParams] = useState({});
-  const [exitParams, setExitParams] = useState({});
-
-  // 回測結果
+  const [entryIndicators, setEntryIndicators] = useState([]);
+  const [exitIndicators, setExitIndicators] = useState([]);
+  const [entryMode, setEntryMode] = useState('and');
+  const [exitMode, setExitMode] = useState('or');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const [exitParamsConfirmed, setExitParamsConfirmed] = useState(false);
-  const [entryParamsConfirmed, setEntryParamsConfirmed] = useState(false);
-
-  // ─── 取得分類指標清單 ───
+  // ✅ 載入所有可用指標分類
   useEffect(() => {
-    axios.get(`${api}/available_indicators/`)
-      .then(({ data }) => {
-        const { entry, exit } = data;
-        setEntryDict(entry);
-        setExitDict(exit);
+    const loadIndicators = async () => {
+      try {
+        const { data } = await axios.get(`${api}/available_indicators/`);
+        setEntryDict(data.entry);
+        setExitDict(data.exit);
+      } catch (err) {
+        console.warn('❗ 指標清單載入失敗：', err.message);
+      }
+    };
 
-        const firstEntryCat = Object.keys(entry)[0];
-        const firstEntry = entry[firstEntryCat][0];
-        const firstExitCat = Object.keys(exit)[0];
-        const firstExit = exit[firstExitCat][0];
-
-        setEntryCat(firstEntryCat);
-        setEntryName(firstEntry);
-        setExitCat(firstExitCat);
-        setExitName(firstExit);
-      })
-      .catch((err) => console.error("Error loading indicators:", err));
+    loadIndicators();
   }, []);
 
-  // ─── 抓 entry schema ───
-  useEffect(() => {
-    if (!entryCat || !entryName) return;
-    axios.get(`${api}/indicator_schema`, {
-      params: {
-        group: "entry",
-        category: entryCat,
-        name: entryName,
-      }
-    })
-      .then(({ data }) => {
-        setEntrySchema(data);
-        setEntryParams(
-          Object.fromEntries(
-            Object.entries(data).map(([k, v]) => [k, v.default])
-          )
-        );
-      })
-      .catch((err) => console.error("Error loading entry schema:", err));
-  }, [entryCat, entryName]);
-
-  // ─── 抓 exit schema ───
-  useEffect(() => {
-    if (!exitCat || !exitName) return;
-    axios.get(`${api}/indicator_schema`, {
-      params: {
-        group: "exit",
-        category: exitCat,
-        name: exitName,
-      }
-    })
-      .then(({ data }) => {
-        setExitSchema(data);
-        setExitParams(
-          Object.fromEntries(
-            Object.entries(data).map(([k, v]) => [k, v.default])
-          )
-        );
-      })
-      .catch((err) => console.error("Error loading exit schema:", err));
-  }, [exitCat, exitName]);
-
-  // ─── 送出回測 ───
-  const handleRun = async () => {
-    setLoading(true);
-    setResult(null);
-    const payload = {
-      entry_category: entryCat,
-      entry_name: entryName,
-      exit_category: exitCat,
-      exit_name: exitName,
-      entry_params: entryParams,
-      exit_params: exitParams,
-    };
+  // ✅ 抓取 schema + 預設參數
+  const fetchSchema = async (group, category, name) => {
     try {
-      const res = await fetch(`${api}/customstrategy/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const res = await axios.get(`${api}/indicator_schema`, {
+        params: { group, category, name },
       });
-      setResult(await res.json());
-      setEntryParamsConfirmed(false);
-      setExitParamsConfirmed(false);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setLoading(false);
+      const schema = res.data;
+      const params = Object.fromEntries(
+        Object.entries(schema).map(([k, v]) => [k, v.default]),
+      );
+      return { schema, params };
+    } catch (err) {
+      return { schema: {}, params: {} };
     }
   };
 
-  // ─── 產生參數欄位 ───
-  const renderParams = (schema, params, setParams, confirmed = false) => {
-    return (
-      <VStack align="stretch" spacing={3}>
-        {Object.entries(schema).map(([key, cfg]) => (
-          <HStack key={key}>
-            <Text w="100px">{key}=</Text>
-            {confirmed ? (
-              <Text>{params[key]}</Text>
-            ) : (
-              <Input
-                size="sm"
-                type="number"
-                min={cfg.min}
-                max={cfg.max}
-                value={params[key]}
-                onChange={(e) =>
-                  setParams({ ...params, [key]: Number(e.target.value) })
-                }
-              />
-            )}
-          </HStack>
-        ))}
-      </VStack>
-    );
+  // ✅ 更新指標內容
+  const updateIndicator = async (
+    group,
+    index,
+    field,
+    value,
+    indicators,
+    setIndicators,
+    dict,
+  ) => {
+    const updated = [...indicators];
+    updated[index] = { ...updated[index], [field]: value };
+
+    if (field === 'category') {
+      const category = value;
+      const name = dict[category]?.[0];
+      if (!name) return;
+      const { schema, params } = await fetchSchema(group, category, name);
+      updated[index] = {
+        category,
+        name,
+        schema,
+        params,
+      };
+    }
+
+    if (field === 'name') {
+      const category = updated[index].category;
+      const name = value;
+      const { schema, params } = await fetchSchema(group, category, name);
+      updated[index] = {
+        ...updated[index],
+        name,
+        schema,
+        params,
+      };
+    }
+
+    setIndicators(updated);
   };
 
-  // ─── 畫面 ───
-  return (
-    <VStack spacing={8} align="stretch" px={6}>
-      <HStack align="start" spacing={10} pt="100px" px={6}>
-        {/* 左側設定 */}
-        <VStack flex={1} align="stretch">
-          <Heading size="md">Strategy Settings</Heading>
+  const updateParam = (index, key, value, indicators, setIndicators) => {
+    const updated = [...indicators];
+    const updatedParams = { ...updated[index].params, [key]: Number(value) };
+    updated[index] = { ...updated[index], params: updatedParams };
+    setIndicators(updated);
+  };
 
-          {/* Entry 類別 */}
-          <Card p={4} bg="purple.100" borderRadius="md">
-            <Box>
-              <Text m={1} fontWeight="bold">
-                Entry Type：
-              </Text>
-              <Select
-                bg="purple.50"
-                value={entryCat}
-                onChange={(e) => {
-                  const cat = e.target.value;
-                  setEntryCat(cat);
-                  setEntryName(entryDict[cat][0] || '');
-                  setEntryParamsConfirmed(false);
-                }}
-              >
-                {Object.keys(entryDict)
-                  .sort()
-                  .map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-              </Select>
-            </Box>
-          </Card>
+  const addIndicator = (group, dict, indicators, setIndicators) => {
+    const category = Object.keys(dict);
+    const name = dict[category];
+    fetchSchema(group, category, name).then(({ schema, params }) => {
+      setIndicators([
+        ...indicators,
+        {
+          category,
+          name,
+          schema,
+          params,
+        },
+      ]);
+    });
+  };
 
-          {/* Entry 指標 */}
-          <Card p={4} bg="purple.100" borderRadius="md">
-            <Box>
-              <Text m={1} fontWeight="bold">
-                Entry Indicators：
-              </Text>
-              <Select
-                bg="purple.50"
-                value={entryName}
-                onChange={(e) => {
-                  setEntryName(e.target.value);
-                  setEntryParamsConfirmed(false);
-                }}
-              >
-                {(entryDict[entryCat] || []).map((ind) => (
-                  <option key={ind} value={ind}>
-                    {ind}
-                  </option>
-                ))}
-              </Select>
-            </Box>
-          </Card>
-          {entryName && !entryParamsConfirmed && (
-            <>
-              {renderParams(entrySchema, entryParams, setEntryParams)}
-              <Button
-                mt={2}
-                size="sm"
-                colorScheme="purple"
-                onClick={() => setEntryParamsConfirmed(true)}
-              >
-                Confirmed
-              </Button>
-            </>
-          )}
+  const removeIndicator = (group, index) => {
+    if(group === "entry") {
+      const updated = [...entryIndicators];
+      updated.splice(index, 1);
+      setEntryIndicators(updated);
+    }
+    else if (group === 'exit') {
+      const updated = [...exitIndicators];
+      updated.splice(index, 1);
+      setExitIndicators(updated);
+    }
+  }
 
-          {/* Exit 類別 */}
-          <Card p={4} bg="purple.100" borderRadius="md">
-            <Box>
-              <Text m={1} fontWeight="bold">
-                Exit Type：
-              </Text>
-              <Select
-                bg="purple.50"
-                value={exitCat}
-                onChange={(e) => {
-                  const cat = e.target.value;
-                  setExitCat(cat);
-                  setExitName(exitDict[cat][0] || '');
-                  setExitParamsConfirmed(false);
-                }}
-              >
-                {Object.keys(exitDict)
-                  .sort()
-                  .map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-              </Select>
-            </Box>
-          </Card>
+  const handleRun = async () => {
+    const payload = {
+      entry_indicators: entryIndicators.map(({ category, name, params }) => ({
+        category,
+        name,
+        params,
+      })),
+      exit_indicators: exitIndicators.map(({ category, name, params }) => ({
+        category,
+        name,
+        params,
+      })),
+      entry_mode: entryMode,
+      exit_mode: exitMode,
+    };
+    setLoading(true);
+    try {
+      const res = await axios.post(`${api}/customstrategy/`, payload);
+      setResult({
+        ...res.data,
+        entry_indicators: payload.entry_indicators,
+        exit_indicators: payload.exit_indicators,
+      });
+    } catch (err) {
+      alert('🚫 執行回測時出錯！');
+    } finally {
+      setLoading(false);
+      resetToInitial();
+    }
+  };
+  const resetToInitial = () => {
+    setEntryIndicators([]);
+    setExitIndicators([]);
+    setEntryMode('and');
+    setExitMode('or');
+  };
 
-          {/* Exit 指標 */}
-          <Card p={4} bg="purple.100" borderRadius="md">
-            <Box>
-              <Text m={1} fontWeight="bold">
-                Exit Indicators：
-              </Text>
-              <Select
-                bg="purple.50"
-                value={exitName}
-                onChange={(e) => {
-                  setExitName(e.target.value);
-                  setExitParamsConfirmed(false);
-                }}
-              >
-                {(exitDict[exitCat] || []).map((ind) => (
-                  <option key={ind} value={ind}>
-                    {ind}
-                  </option>
-                ))}
-              </Select>
-            </Box>
-          </Card>
-          {exitName && !exitParamsConfirmed && (
-            <>
-              {renderParams(exitSchema, exitParams, setExitParams)}
-              <Button
-                mt={2}
-                size="sm"
-                colorScheme="purple"
-                onClick={() => setExitParamsConfirmed(true)}
-              >
-                Confirmed
-              </Button>
-            </>
-          )}
-
-          <Button
-            m={6}
-            colorScheme="purple"
-            onClick={handleRun}
-            disabled={loading}
-          >
-            {loading && <Spinner size="sm" mr={2} />}
-            Excute Backtest
+  const renderIndicators = (group, indicators, setIndicators, dict) => (
+    <VStack align="stretch" spacing={4}>
+      {indicators.map((ind, i) => (
+        <Card key={i} p={3} bg="gray.100" position="relative" borderRadius="lg">
+          <Button size="xs" colorScheme="red" position="absolute" top="1" right="1" borderRadius="full" transform="translate(25%, -25%)" zIndex="1" onClick={() => removeIndicator(group, i)}>
+            ✕
           </Button>
-        </VStack>
+          <Select
+            placeholder="選擇類別"
+            value={ind.category || ''}
+            onChange={(e) =>
+              updateIndicator(
+                group,
+                i,
+                'category',
+                e.target.value,
+                indicators,
+                setIndicators,
+                dict,
+              )
+            }
+          >
+            {Object.keys(dict).map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </Select>
 
-        {/* 右側結果 */}
-        <VStack flex={1} align="stretch">
-          <Box p={4} bg="gray.50" borderRadius="md">
-            <Heading size="md">Backtest Result</Heading>
-            {loading && <Text>回測中…</Text>}
-            {result && (
-              <Box p={4} bg="gray.50" borderRadius="md">
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                  <Stat>
-                    <StatLabel>💰 Start Value：</StatLabel>
-                    <StatNumber>${result.start_value.toFixed(2)}</StatNumber>
-                  </Stat>
-                  <Stat>
-                    <StatLabel>💰 Final Value：</StatLabel>
-                    <StatNumber>${result.final_value.toFixed(2)}</StatNumber>
-                  </Stat>
-                  <Stat>
-                    <StatLabel>📊 CAGR：</StatLabel>
-                    <StatNumber>{result.cagr.toFixed(2)}%</StatNumber>
-                  </Stat>
-                  <Stat>
-                    <StatLabel>📉 Maximum Drawdown：</StatLabel>
-                    <StatNumber>{result.max_drawdown.toFixed(2)}%</StatNumber>
-                  </Stat>
-                  <Stat>
-                    <StatLabel>📆 Drawdown Duration：</StatLabel>
-                    <StatNumber>{result.drawdown_duration} days</StatNumber>
-                  </Stat>
-                  <Stat>
-                    <StatLabel>⚖️ Sharpe Ratio：</StatLabel>
-                    <StatNumber>{result.sharpe.toFixed(2)}</StatNumber>
-                  </Stat>
-                </SimpleGrid>
-              </Box>
-            )}
-          </Box>
-        </VStack>
-      </HStack>
-      {result?.chart && (
-        <Box bg="white" p={4} borderRadius="md" shadow="sm">
-          <Heading size="sm" mb={2}>
-            Strategy vs Benchmark
-          </Heading>
-          <img
-            src={result.chart}
-            alt="strategy vs benchmark"
-            style={{ width: '100%', maxHeight: 400, objectFit: 'contain' }}
-          />
-        </Box>
-      )}
-      {result?.drawdown_duration && (
-        <Box bg="white" p={4} borderRadius="md" shadow="sm">
-          <Heading size="sm" mb={2}>
-            Drawdown Comparison
-          </Heading>
-          <img
-            src={result.drawdown_chart}
-            alt="Drawdown Comparison"
-            style={{ width: '100%', maxHeight: 400, objectFit: 'contain' }}
-          />
-        </Box>
-      )}
+          <Select
+            placeholder="選擇指標"
+            value={ind.name || ''}
+            onChange={(e) =>
+              updateIndicator(
+                group,
+                i,
+                'name',
+                e.target.value,
+                indicators,
+                setIndicators,
+                dict,
+              )
+            }
+          >
+            {(dict[ind.category] || []).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </Select>
+
+          {Object.entries(ind.schema || {}).map(([key, cfg]) => (
+            <HStack key={key}>
+              <Text>{key}</Text>
+              <Input
+                type="number"
+                value={ind.params?.[key] ?? ''}
+                onChange={(e) =>
+                  updateParam(i, key, e.target.value, indicators, setIndicators)
+                }
+              />
+            </HStack>
+          ))}
+        </Card>
+      ))}
+      <Button
+        onClick={() => addIndicator(group, dict, indicators, setIndicators)}
+      >
+        ➕ 加入一個指標
+      </Button>
+      console.log("🔥 schema for indicator:", ind.name, ind.schema);
     </VStack>
+  );
+
+  return (
+    <Box mt={20} p={6}>
+      <SimpleGrid columns={2} spacing={10}>
+        <Box>
+          <Heading size="md" mb={2}>
+            進場邏輯（Entry）
+          </Heading>
+          <Select
+            value={entryMode}
+            onChange={(e) => setEntryMode(e.target.value)}
+          >
+            <option value="and">AND</option>
+            <option value="or">OR</option>
+          </Select>
+          {renderIndicators(
+            'entry',
+            entryIndicators,
+            setEntryIndicators,
+            entryDict,
+          )}
+        </Box>
+
+        <Box>
+          <Heading size="md" mb={2}>
+            出場邏輯（Exit）
+          </Heading>
+          <Select
+            value={exitMode}
+            onChange={(e) => setExitMode(e.target.value)}
+          >
+            <option value="and">AND</option>
+            <option value="or">OR</option>
+          </Select>
+          {renderIndicators(
+            'exit',
+            exitIndicators,
+            setExitIndicators,
+            exitDict,
+          )}
+        </Box>
+      </SimpleGrid>
+
+      <Button mt={8} colorScheme="teal" onClick={handleRun} isLoading={loading}>
+        🚀 執行回測
+      </Button>
+
+      {result && (
+        <Box mt={10}>
+          <Heading size="md" mb={4}>
+            🧭 本次使用的指標
+          </Heading>
+
+          <SimpleGrid mb={10} columns={2} spacing={10}>
+            {/* 左邊：進場指標 */}
+            <Box>
+              <Text fontWeight="bold">📈 進場指標（Entry）:</Text>
+              <VStack align="start" pl={4} mt={2}>
+                {result?.entry_indicators?.map((ind, i) => (
+                  <Card bg="purple.100" key={`entry-${i}`}>
+                    <CardBody>
+                      <Text fontWeight="bold" fontSize={'2xl'}>
+                        {ind.name}
+                      </Text>
+                      <Box>
+                        {Object.entries(ind.params).map(([key, value]) => (
+                          <Text key={key}>
+                            {' '}
+                            {key}: {value}
+                          </Text>
+                        ))}
+                      </Box>
+                    </CardBody>
+                  </Card>
+                ))}
+              </VStack>
+            </Box>
+
+            {/* 右邊：出場指標 */}
+            <Box>
+              <Text fontWeight="bold">📉 出場指標（Exit）:</Text>
+              <VStack align="start" pl={4} mt={2}>
+                {result?.exit_indicators?.map((ind, i) => (
+                  <Card bg="purple.100" key={`entry-${i}`}>
+                    <CardBody>
+                      <Text fontWeight="bold" fontSize={'2xl'}>
+                        {ind.name}
+                      </Text>
+                      <Box>
+                        {Object.entries(ind.params).map(([key, value]) => (
+                          <Text key={key}>
+                            {' '}
+                            {key}: {value}
+                          </Text>
+                        ))}
+                      </Box>
+                    </CardBody>
+                  </Card>
+                ))}
+              </VStack>
+            </Box>
+          </SimpleGrid>
+          <Heading size="md" mb={4}>
+            📊 回測結果
+          </Heading>
+          <SimpleGrid columns={2} spacing={6}>
+            <Stat>
+              <StatLabel>初始資金</StatLabel>
+              <StatNumber>${result.start_value}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>最終資金</StatLabel>
+              <StatNumber>${result.final_value}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>年化報酬率</StatLabel>
+              <StatNumber>{result.cagr}%</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>Sharpe Ratio</StatLabel>
+              <StatNumber>{result.sharpe}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>最大回檔</StatLabel>
+              <StatNumber>{result.max_drawdown}%</StatNumber>
+            </Stat>
+          </SimpleGrid>
+          <Box mt={4}>
+            <img src={result.chart} alt="績效曲線" />
+            <img src={result.drawdown_chart} alt="回檔圖" />
+          </Box>
+        </Box>
+      )}
+    </Box>
   );
 }

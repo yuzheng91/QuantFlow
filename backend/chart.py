@@ -2,7 +2,10 @@ import io
 import base64
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 import quantstats as qs
+
+matplotlib.use("Agg")
 
 def compute_drawdown(series):
     cummax = series.cummax()
@@ -68,7 +71,6 @@ def build_chart_b64(portfolio_values, dates):
     qs.plots.returns(
         returns,
         benchmark=benchmark_returns,
-        cumulative=True,
         savefig=buf
     )
     plt.close()
