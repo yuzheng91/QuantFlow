@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-jr*2=&+i&!zv@7+4)m6*)n!!p$3dnp60r)@w^%toit_=!$3-*+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "140.116.214.140"]
+ALLOWED_HOSTS = []
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
@@ -62,7 +62,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # 開發階段前端用的
     "http://127.0.0.1:3000",
-    "http://140.116.214.140:3000",  # 以後部署上線要寫這個
+    "https://your-production-frontend.com",  # 以後部署上線要寫這個
 ]
 CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = "quantflow.urls"
