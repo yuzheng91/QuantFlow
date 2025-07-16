@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-jr*2=&+i&!zv@7+4)m6*)n!!p$3dnp60r)@w^%toit_=!$3-*+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "140.116.214.140", "140.116.214.140:8888"]
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
