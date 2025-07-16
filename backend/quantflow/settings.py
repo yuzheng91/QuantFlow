@@ -95,7 +95,7 @@ DATABASES = {
         'USER': os.environ.get('DB_USER', 'your_user'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'your_password'),
         'HOST': os.environ.get('DB_HOST', 'db'),  # 關鍵是 'db'
-        'PORT': os.environ.get('DB_PORT', '3306'),
+        'PORT': os.environ.get('DB_PORT', '3307'),
     }
 }
 
