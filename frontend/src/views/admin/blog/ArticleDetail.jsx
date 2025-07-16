@@ -12,7 +12,7 @@ export default function ArticleDetail() {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8000/api/blog/${id}/`)
+      .get(`http://140.116.214.140:8888/api/blog/${id}/`)
       .then((res) => setArticle(res.data))
       .catch((err) => console.error('載入文章失敗', err))
       .finally(() => setLoading(false));
