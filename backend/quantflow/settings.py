@@ -62,7 +62,6 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # 開發階段前端用的
     "http://127.0.0.1:3000",
-    "https://your-production-frontend.com",  # 以後部署上線要寫這個
 ]
 CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = "quantflow.urls"
@@ -89,9 +88,13 @@ WSGI_APPLICATION = "quantflow.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'your_db_name'),
+        'USER': os.environ.get('DB_USER', 'your_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'your_password'),
+        'HOST': os.environ.get('DB_HOST', 'db'),  # 關鍵是 'db'
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 

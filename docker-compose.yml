@@ -8,6 +8,14 @@ services:
     ports:
       - "8000:8000"
     command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=your_db_name
+      - DB_USER=your_user
+      - DB_PASSWORD=your_password
 
   frontend:
     build:
@@ -15,3 +23,15 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:80"
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-container
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: your_password
+      MYSQL_DATABASE: your_db_name
+      MYSQL_USER: your_user
+      MYSQL_PASSWORD: your_password

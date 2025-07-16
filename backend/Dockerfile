@@ -17,6 +17,7 @@ RUN pip install ta_lib-0.6.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86
 # 安裝你的其他 Python 依賴
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+RUN pip install cryptography
 
 # 複製專案程式碼
 COPY . /app
