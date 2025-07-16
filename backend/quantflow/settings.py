@@ -62,7 +62,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # 開發階段前端用的
     "http://127.0.0.1:3000",
-    "https:http://140.116.214.140:3000",  # 以後部署上線要寫這個
+    "http:http://140.116.214.140:3000",  # 以後部署上線要寫這個
 ]
 CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = "quantflow.urls"
