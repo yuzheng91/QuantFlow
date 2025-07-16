@@ -18,7 +18,7 @@ import {
   CardBody,
 } from '@chakra-ui/react';
 
-const api = 'http://localhost:8888/api';
+const api = 'http://140.116.214.140:8888/api';
 
 export default function CustomStrategy() {
   const [entryDict, setEntryDict] = useState({});
