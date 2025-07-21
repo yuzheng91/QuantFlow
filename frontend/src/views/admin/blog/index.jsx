@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react';
 import ArticleCard from './components/articlecard';
 
-const api = 'http://140.116.214.140:8888/api';
+const api = 'http://127.0.0.1:8000/api';
 
 export default function Blog() {
   const [articles, setArticles] = useState([]);
@@ -20,7 +20,7 @@ export default function Blog() {
   const [nextPage, setNextPage] = useState(null);
   const [prevPage, setPrevPage] = useState(null);
   const [currentPageUrl, setCurrentPageUrl] = useState(
-    'http://140.116.214.140:8888/api/blog/',
+    'http://localhost:8000/api/blog/',
   );
   const [categories, setCategories] = useState([]);
   const [currentCategory, setCurrentCategory] = useState('All');
@@ -40,7 +40,7 @@ export default function Blog() {
   }, [currentPageUrl]);
 
   useEffect(() => {
-    axios.get('http://140.116.214.140:8888/api/categories/').then((res) => {
+    axios.get('http://localhost:8000/api/categories/').then((res) => {
       setCategories(['All', ...res.data.results.map((cat) => cat.name)]);
     });
   }, []);
@@ -64,7 +64,7 @@ export default function Blog() {
             onClick={() => {
               setCurrentCategory(cat);
               console.log('你點了分類：', cat);
-              const baseUrl = 'http://140.116.214.140:8888/api/blog/';
+              const baseUrl = 'http://localhost:8000/api/blog/';
               const url =
                 cat === 'All'
                   ? baseUrl

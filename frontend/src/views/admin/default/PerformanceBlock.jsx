@@ -31,7 +31,7 @@ function PerformanceBlock() {
   const bg = useColorModeValue("white", "gray.700");
 
   useEffect(() => {
-    axios.get("http://140.116.214.140:8888/api/fixedstrategy/").then((res) => {
+    axios.get("http://localhost:8000/api/fixedstrategy/").then((res) => {
       setMetricsList(res.data);
     });
   }, []);

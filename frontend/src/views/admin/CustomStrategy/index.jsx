@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import KLineChart from './KLineChart';
 import {
   Box,
   Button,
@@ -18,7 +19,7 @@ import {
   CardBody,
 } from '@chakra-ui/react';
 
-const api = 'http://140.116.214.140:8888/api';
+const api = 'http://localhost:8000/api';
 
 export default function CustomStrategy() {
   const [entryDict, setEntryDict] = useState({});
@@ -126,17 +127,16 @@ export default function CustomStrategy() {
   };
 
   const removeIndicator = (group, index) => {
-    if(group === "entry") {
+    if (group === 'entry') {
       const updated = [...entryIndicators];
       updated.splice(index, 1);
       setEntryIndicators(updated);
-    }
-    else if (group === 'exit') {
+    } else if (group === 'exit') {
       const updated = [...exitIndicators];
       updated.splice(index, 1);
       setExitIndicators(updated);
     }
-  }
+  };
 
   const handleRun = async () => {
     const payload = {
@@ -156,6 +156,7 @@ export default function CustomStrategy() {
     setLoading(true);
     try {
       const res = await axios.post(`${api}/customstrategy/`, payload);
+      console.log("後端回傳結果:", res.data);
       setResult({
         ...res.data,
         entry_indicators: payload.entry_indicators,
@@ -179,7 +180,17 @@ export default function CustomStrategy() {
     <VStack align="stretch" spacing={4}>
       {indicators.map((ind, i) => (
         <Card key={i} p={3} bg="gray.100" position="relative" borderRadius="lg">
-          <Button size="xs" colorScheme="red" position="absolute" top="1" right="1" borderRadius="full" transform="translate(25%, -25%)" zIndex="1" onClick={() => removeIndicator(group, i)}>
+          <Button
+            size="xs"
+            colorScheme="red"
+            position="absolute"
+            top="1"
+            right="1"
+            borderRadius="full"
+            transform="translate(25%, -25%)"
+            zIndex="1"
+            onClick={() => removeIndicator(group, i)}
+          >
             ✕
           </Button>
           <Select
@@ -353,7 +364,7 @@ export default function CustomStrategy() {
           <Heading size="md" mb={4}>
             📊 回測結果
           </Heading>
-          <SimpleGrid columns={2} spacing={6}>
+          <SimpleGrid columns={4} spacing={6}>
             <Stat>
               <StatLabel>初始資金</StatLabel>
               <StatNumber>${result.start_value}</StatNumber>
@@ -371,14 +382,41 @@ export default function CustomStrategy() {
               <StatNumber>{result.sharpe}</StatNumber>
             </Stat>
             <Stat>
+              <StatLabel>交易次數</StatLabel>
+              <StatNumber>{result.num_trades}次</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>勝率</StatLabel>
+              <StatNumber>{result.win_rate*100}%</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>每次交易獲益</StatLabel>
+              <StatNumber>${result.avg_pl}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>盈虧比</StatLabel>
+              <StatNumber>${result.profit_factor}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>最大收益</StatLabel>
+              <StatNumber>${result.max_profit}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel>最大虧損</StatLabel>
+              <StatNumber>${result.max_loss}</StatNumber>
+            </Stat>
+            <Stat>
               <StatLabel>最大回檔</StatLabel>
               <StatNumber>{result.max_drawdown}%</StatNumber>
             </Stat>
+            <Stat>
+              <StatLabel>Calmar Ratio</StatLabel>
+              <StatNumber>{result.calmar_ratio}</StatNumber>
+            </Stat>
           </SimpleGrid>
-          <Box mt={4}>
-            <img src={result.chart} alt="績效曲線" />
-            <img src={result.drawdown_chart} alt="回檔圖" />
-          </Box>
+          <div style={{ width: '100%', height: '400px' }}>
+            <KLineChart signals={result.signals}/>
+          </div>
         </Box>
       )}
     </Box>

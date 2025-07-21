@@ -9,12 +9,15 @@ from django.views.decorators.http import require_GET
 @require_http_methods(["GET"])
 def fixed_strategy(request):
     result = run_strategy_metrics()
+    print(result)
     return JsonResponse(result, safe=False)
 
 
 def scan(root):
     ans = {}
     for category in os.listdir(root):
+        if category == "__pycache__":
+            continue
         cat_path = os.path.join(root, category)
         if not os.path.isdir(cat_path):
             continue

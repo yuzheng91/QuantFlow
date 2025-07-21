@@ -24,7 +24,7 @@ COPY . /app
 
 
 # 啟動 Django 伺服器（如需改為 gunicorn 可調整）
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8888"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
 
