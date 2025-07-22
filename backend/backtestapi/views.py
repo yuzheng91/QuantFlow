@@ -5,6 +5,7 @@ import os, importlib, json
 from strategies.run_strategy_metrics import run_strategy_metrics
 from run_backtest import backtest
 from django.views.decorators.http import require_GET
+from django.conf import settings
 
 @require_http_methods(["GET"])
 def fixed_strategy(request):
@@ -51,9 +52,21 @@ def indicator_schema(request):
 def custom_strategy(request):
     data = json.loads(request.body)
     result = backtest(
+        symbol=data.get("symbol", "MSFT"),
+        start_date=data.get("start_date", "2012-01-03"),
+        end_date=data.get("end_date", "2024-12-26",),
         entry_indicators=data.get("entry_indicators", []),
         exit_indicators=data.get("exit_indicators", []),
         entry_mode=data.get("entry_mode", "and"),
         exit_mode=data.get("exit_mode", "or"),
     )
     return JsonResponse(result, safe=False)
+
+@require_GET
+def list_symbols(request):
+    data_path = os.path.join(settings.BASE_DIR, 'data')
+    files = [
+        f[:-4] for f in os.listdir(data_path)
+        if f.endswith('.csv')
+    ]
+    return JsonResponse({'symbols': files})

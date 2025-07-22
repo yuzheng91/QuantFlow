@@ -49,8 +49,9 @@ def combine_signals(signals, mode='and'):
     return combined
         
 
-def backtest(entry_indicators,exit_indicators, entry_mode='and', exit_mode='or'):
-    df = pd.read_csv("data/MSFT.csv", index_col="Date", parse_dates=True)
+def backtest(symbol, start_date, end_date, entry_indicators,exit_indicators, entry_mode='and', exit_mode='or'):
+    df = pd.read_csv(f"data/{symbol}.csv", index_col="Date", parse_dates=True)
+    df = df[(df.index >= start_date) & (df.index <= end_date)].copy()
     kline_data = [
         {
             "time": date.strftime("%Y-%m-%d"),
@@ -132,7 +133,7 @@ def backtest(entry_indicators,exit_indicators, entry_mode='and', exit_mode='or')
         "sharpe": round(sharpe.get("sharperatio", 0), 2),
         "max_drawdown": round(drawdown.max.drawdown, 2),
         "drawdown_duration": drawdown.max.len,
-        "win_rate": round(win_rate, 4),
+        "win_rate": round(win_rate, 3),
         "num_trades": num_trades,
         "avg_pl": round(avg_pl, 2),
         "profit_factor": round(profit_factor, 2),

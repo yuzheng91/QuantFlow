@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/blog/', ArticleListCreateView.as_view(), name='article-list'),
     path('api/blog/<int:pk>/', ArticleDetailView.as_view()),
     path('api/categories/', CategoryListView.as_view(), name='category-list'),
+    path('api/symbols/', views.list_symbols),
 ]
 
 if settings.DEBUG:

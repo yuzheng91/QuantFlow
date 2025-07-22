@@ -30,6 +30,18 @@ export default function CustomStrategy() {
   const [exitMode, setExitMode] = useState('or');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [symbols, setSymbols] = useState([]);
+  const [symbol, setSymbol] = useState([]);
+  const [startDate, setStartDate] = useState('2018-01-01');
+  const [endDate, setEndDate] = useState('2022-12-31');
+
+  useEffect(() => {
+    axios.get(`${api}/symbols/`).then((res) => {
+      const arr = res.data.symbols || [];
+      setSymbols(arr);
+      setSymbol(arr[0] || '');
+    });
+  }, []);
 
   // ✅ 載入所有可用指標分類
   useEffect(() => {
@@ -140,6 +152,9 @@ export default function CustomStrategy() {
 
   const handleRun = async () => {
     const payload = {
+      symbol,
+      start_date: startDate,
+      end_date: endDate,
       entry_indicators: entryIndicators.map(({ category, name, params }) => ({
         category,
         name,
@@ -156,7 +171,7 @@ export default function CustomStrategy() {
     setLoading(true);
     try {
       const res = await axios.post(`${api}/customstrategy/`, payload);
-      console.log("後端回傳結果:", res.data);
+      console.log('後端回傳結果:', res.data);
       setResult({
         ...res.data,
         entry_indicators: payload.entry_indicators,
@@ -301,6 +316,28 @@ export default function CustomStrategy() {
           )}
         </Box>
       </SimpleGrid>
+      <Heading size="md" mt={6}>
+        選擇股票與日期區間
+      </Heading>
+      <HStack spacing={4} mt={2}>
+        <Select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+          {symbols.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </Select>
+        <Input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+        <Input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
+      </HStack>
 
       <Button mt={8} colorScheme="teal" onClick={handleRun} isLoading={loading}>
         🚀 執行回測
@@ -387,7 +424,7 @@ export default function CustomStrategy() {
             </Stat>
             <Stat>
               <StatLabel>勝率</StatLabel>
-              <StatNumber>{result.win_rate*100}%</StatNumber>
+              <StatNumber>{result.win_rate * 100}%</StatNumber>
             </Stat>
             <Stat>
               <StatLabel>每次交易獲益</StatLabel>
@@ -415,7 +452,13 @@ export default function CustomStrategy() {
             </Stat>
           </SimpleGrid>
           <div style={{ width: '100%', height: '400px' }}>
-            <KLineChart signals={result.signals}/>
+            <KLineChart
+              signals={result.signals}
+              kline={result.kline}
+              symbol={symbol}
+              startDate={startDate}
+              endDate={endDate}
+            />
           </div>
         </Box>
       )}

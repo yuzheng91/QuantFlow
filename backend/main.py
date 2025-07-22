@@ -7,7 +7,7 @@ def run_backtest(strategy_class):
     cerebro = bt.Cerebro()
     cerebro.addstrategy(strategy_class)
 
-    df = pd.read_csv('data/AAPL_daily_2012_2024.csv', index_col='Date', parse_dates=True)
+    df = pd.read_csv('data/AAPL.csv', index_col='Date', parse_dates=True)
     data = bt.feeds.PandasData(dataname=df)
     cerebro.adddata(data)
     start_value = 10000
